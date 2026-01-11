@@ -542,6 +542,7 @@ const handleSmileBackLocal = async (imageUrl: string) => {
         )}
 
         <ImageGrid 
+          
           images={images}
           authenticated={authenticated}
           userId={user?.id}
@@ -549,7 +550,9 @@ const handleSmileBackLocal = async (imageUrl: string) => {
           onDelete={handleDeleteLocal}
           shimmerStyle={shimmerStyle}
         />
+        
       </div>
+      
 
       {loading && (
         <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-loading-overlay z-50">
