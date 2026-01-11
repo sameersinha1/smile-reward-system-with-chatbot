@@ -289,6 +289,7 @@ const App = () => {
   }, [nounsFilterEnabled]);
 
   const capturePhoto = async () => {
+    
     setLoading(true);
     if (!user) {
   setUploadStatus("Please connect wallet first 🙂");
@@ -402,23 +403,32 @@ setImages(prev => [
     }
   };
 
-  const handleSmileBackLocal = async (imageUrl: string) => {
-    try {
-      await handleSmileBack(imageUrl);
-      // Update the local state after successful smile back
-      setImages(prev => prev.map(img => {
-        if (img.url === imageUrl) {
-          return {
-            ...img,
-            smileCount: img.smileCount + 1
-          };
-        }
-        return img;
-      }));
-    } catch (error) {
-      console.error('Error handling smile back:', error);
-    }
-  };
+const handleSmileBackLocal = async (imageUrl: string) => {
+  try {
+    // existing logic
+    await handleSmileBack(imageUrl);
+
+    // ✅ ADD DEMO REWARD HERE
+    await supabase
+      .from("user_rewards")
+      .update({
+        smile_coins: supabase.rpc("increment", { x: 2 })
+      })
+      .eq("user_id", user!.id);
+
+    // update UI
+    setImages(prev =>
+      prev.map(img =>
+        img.url === imageUrl
+          ? { ...img, smileCount: img.smileCount + 1 }
+          : img
+      )
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 
   const handleDeleteLocal = async (imageUrl: string, userId: string) => {
     try {
