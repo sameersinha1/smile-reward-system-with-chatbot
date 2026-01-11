@@ -1,5 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Heart } from "lucide-react";
+import { useState } from "react";
+
 import { Smile, Share, Trash2, DollarSign, Star } from "lucide-react";
 import {
   Dialog,

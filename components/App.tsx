@@ -24,7 +24,9 @@ export default function App() {
   };
 
   return (
-    <div className="bg-yellow-100 min-h-screen flex flex-col items-center justify-center gap-6">
+    <div className="relative mx-auto max-w-md rounded-3xl overflow-hidden border-4 border-black shadow-xl bg-black">
+
+
       <Card className="p-6 text-center">
         <h1 className="text-2xl font-bold mb-4">
           Smile App Camera Test 😁
