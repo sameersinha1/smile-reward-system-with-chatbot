@@ -6,7 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Camera, Smile, Share, Trash2, LogOut } from "lucide-react";
 import { createClient } from '@supabase/supabase-js'
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { ethers } from 'ethers';
+import { Contract, parseUnits, formatUnits } from "ethers";
+
+
 import { ImageGrid } from './ImageGrid';
 import { initCamera, uploadImage, compressImage, loadExistingPhotos, handleSmileBack, deletePhoto } from '../utils/camera';
 import GoFundSmiles from './GoFundSmiles';
@@ -27,17 +29,17 @@ const CONTRACT_ABI = [
 ];
 
 // Add Base network configuration at the top of the file
-const BASE_CHAIN_ID = 8453; // Mainnet Base
+const BASE_CHAIN_ID = 84532; // Mainnet Base
 const BASE_CONFIG = {
-  chainId: BASE_CHAIN_ID,
-  name: 'Base',
-  network: 'base',
+  chainId: 84532,
+  name: 'Base Sepolia',
+  network: 'base-sepolia',
   rpcUrls: {
-    default: 'https://mainnet.base.org',
-    public: 'https://mainnet.base.org',
+    default: 'https://sepolia.base.org',
+    public: 'https://sepolia.base.org',
   },
   blockExplorers: {
-    default: { name: 'BaseScan', url: 'https://basescan.org' },
+    default: { name: 'BaseScan Sepolia', url: 'https://sepolia.basescan.org' },
   },
   nativeCurrency: {
     name: 'Ethereum',
@@ -45,6 +47,7 @@ const BASE_CONFIG = {
     decimals: 18,
   },
 };
+
 
 interface Image {
   url: string;
@@ -59,7 +62,8 @@ interface Image {
 const App = () => {
   const { login, authenticated, user, logout } = usePrivy();
   const { wallets } = useWallets();
-  const [contract, setContract] = useState<ethers.Contract | null>(null);
+  const [contract, setContract] = useState<Contract | null>(null);
+
   const [images, setImages] = useState<Image[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -122,7 +126,8 @@ const App = () => {
         }
 
         const signer = updatedProvider.getSigner();
-        const smilePleaseContract = new ethers.Contract(
+        const smilePleaseContract = new Contract(
+
           CONTRACT_ADDRESS,
           CONTRACT_ABI,
           signer
@@ -285,20 +290,49 @@ const App = () => {
 
   const capturePhoto = async () => {
     setLoading(true);
+    if (!user) {
+  setUploadStatus("Please connect wallet first 🙂");
+  setLoading(false);
+  return;
+}
+
     setUploadStatus('Capturing smile...');
     try {
       const canvas = canvasRef.current;
       const video = videoRef.current;
-      if (!canvas || !video) return;
+      if (!canvas || !video) {
+  setLoading(false);
+  return;
+}
+
 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
-      if (!context) return;
+      if (!context) {
+  setLoading(false);
+  return;
+}
+
 
       context.translate(canvas.width, 0);
       context.scale(-1, 1);
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const previewUrl = canvas.toDataURL("image/jpeg");
+
+setImages(prev => [
+  {
+    url: previewUrl,
+    timestamp: new Date().toISOString(),
+    isLoading: false,
+    smileCount: 0,
+    smileScore: undefined,
+    hasWon: undefined,
+    isNounish: nounsFilterEnabled
+  },
+  ...prev
+]);
+  
 
       setUploadStatus('Processing image...');
       const blob = await new Promise<Blob>((resolve, reject) => {
@@ -347,13 +381,17 @@ const App = () => {
       setImages(prev => [newImage, ...prev]);
 
       // Send transaction to analyze smile
-      const tx = await contract.analyzeSmile(uploadResult.url, {
+     /* const tx = await contract.analyzeSmile(uploadResult.url, {
         value: oracleFee,
         gasLimit: 500000
       });
 
       setUploadStatus('Your smile is being submitted on-chain... 😊');
       await tx.wait(1);
+      */
+     setUploadStatus('✅ Smile captured (test mode)');
+     setLoading(false);
+
       
       setUploadStatus('On-chain ai analysis in progress... 😊');
     } catch (error) {
@@ -456,7 +494,7 @@ const App = () => {
           </Button>
         </div>
         <div className="text-center mb-8 flex justify-center gap-4">
-          {authenticated && (
+          
             <div className="text-center mb-8">
               <Button
                 onClick={capturePhoto}
@@ -467,7 +505,7 @@ const App = () => {
                 Capture Smile!
               </Button>
             </div>
-          )}
+          
           {authenticated ? (
             <div className="text-center mb-4">
               <Button
