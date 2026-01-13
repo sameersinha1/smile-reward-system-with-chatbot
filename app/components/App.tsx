@@ -133,7 +133,7 @@ const App = () => {
 
           CONTRACT_ADDRESS,
           CONTRACT_ABI,
-          signer
+          
         );
         
         try {
