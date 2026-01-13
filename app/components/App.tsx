@@ -60,9 +60,12 @@ interface Image {
 }
 
 const App = () => {
+  
   const { login, authenticated, user, logout } = usePrivy();
   const { wallets } = useWallets();
   const [contract, setContract] = useState<Contract | null>(null);
+  const [currentStreak, setCurrentStreak] = useState<number>(0);
+  const [maxStreak, setMaxStreak] = useState<number>(0);
 
   const [images, setImages] = useState<Image[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -249,6 +252,21 @@ const App = () => {
       }
     };
   }, [authenticated, wallets]);
+  const fetchUserStreak = async (userId: string) => {
+  const { data, error } = await supabase
+    .from("user_streaks")
+    .select("current_streak, max_streak")
+    .eq("user_id", userId)
+    .single();
+
+  if (error) {
+    console.error("fetchUserStreak error:", error);
+    return;
+  }
+
+  setCurrentStreak(data.current_streak);
+  setMaxStreak(data.max_streak);
+};
 
   useEffect(() => {
     if (nounsFilterEnabled && videoRef.current) {
@@ -287,6 +305,56 @@ const App = () => {
       };
     }
   }, [nounsFilterEnabled]);
+  useEffect(() => {
+  if (authenticated && user) {
+    fetchUserStreak(user.id);
+  }
+}, [authenticated, user]);
+const updateUserStreak = async (userId: string) => {
+  const today = new Date().toISOString().split("T")[0];
+
+  const { data, error } = await supabase
+    .from("user_streaks")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
+  if (error && error.code !== "PGRST116") return;
+
+  if (!data) {
+    await supabase.from("user_streaks").insert({
+      user_id: userId,
+      current_streak: 1,
+      max_streak: 1,
+      last_smile_date: today,
+    });
+    await fetchUserStreak(userId);
+    return;
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yDate = yesterday.toISOString().split("T")[0];
+
+  let newStreak = 1;
+
+  if (data.last_smile_date === today) return;
+
+  if (data.last_smile_date === yDate) {
+    newStreak = data.current_streak + 1;
+  }
+
+  await supabase
+    .from("user_streaks")
+    .update({
+      current_streak: newStreak,
+      max_streak: Math.max(newStreak, data.max_streak),
+      last_smile_date: today,
+    })
+    .eq("user_id", userId);
+
+  await fetchUserStreak(userId);
+};
 
   const capturePhoto = async () => {
     
@@ -333,7 +401,8 @@ setImages(prev => [
   },
   ...prev
 ]);
-  
+  await updateUserStreak(user.id);
+
 
       setUploadStatus('Processing image...');
       const blob = await new Promise<Blob>((resolve, reject) => {
@@ -462,7 +531,18 @@ const handleSmileBackLocal = async (imageUrl: string) => {
   return (
     <div className="bg-yellow-100 min-h-screen">
       <div className="container mx-auto px-4 py-8 max-w-[1200px]">
+        <div className="mt-4 flex justify-center gap-4">
+  <div className="bg-[#FFD700] px-4 py-2 border-2 border-black rounded-lg font-bold shadow">
+    🔥 Current Streak: {currentStreak} days
+  </div>
+
+  <div className="bg-[#90EE90] px-4 py-2 border-2 border-black rounded-lg font-bold shadow">
+    🏆 Best Streak: {maxStreak} days
+  </div>
+</div>
+
         <div className="bg-[#FFE5E5] border-[3px] border-black rounded-lg p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-12 max-w-2xl mx-auto">
+
           <h1 className="text-4xl font-black text-center mb-6 transform -rotate-2">
             Hi, I'm Mr. Based Smiles 😁
           </h1>
