@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ethers } from 'ethers';
+import { BrowserProvider, Contract, formatUnits, parseUnits } from "ethers";
+
 import { Heart, Sparkles, PartyPopper } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
 import { Modal } from "./ui/modal";
@@ -33,19 +34,20 @@ const GoFundSmiles = ({ wallet }: GoFundSmilesProps) => {
       if (!wallet) return;
       try {
         const provider = await wallet.getEthersProvider();
-        const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, provider);
+        const usdcContract = new Contract(USDC_ADDRESS, USDC_ABI, provider);
         const decimals = await usdcContract.decimals();
 
         // Fetch total funds
         const totalFundsRaw = await usdcContract.balanceOf(RECIPIENT_ADDRESS);
-        const formattedTotalFunds = ethers.utils.formatUnits(totalFundsRaw, decimals);
+const formattedTotalFunds = formatUnits(totalFundsRaw, decimals);
         setTotalFunds(parseFloat(formattedTotalFunds).toFixed(2));
 
         // Fetch user balance
         const signer = provider.getSigner();
         const userAddress = await signer.getAddress();
         const userBalanceRaw = await usdcContract.balanceOf(userAddress);
-        const formattedUserBalance = ethers.utils.formatUnits(userBalanceRaw, decimals);
+        const formattedUserBalance = formatUnits(userBalanceRaw, decimals);
+
         setUserBalance(parseFloat(formattedUserBalance).toFixed(2));
       } catch (error) {
         console.error("Error fetching balances:", error);
@@ -62,29 +64,41 @@ const GoFundSmiles = ({ wallet }: GoFundSmilesProps) => {
   };
 
   const handleDonate = async () => {
-    if (!amount || !wallet) return;
+  if (!amount || !wallet) return;
 
-    setLoading(true);
-    try {
-      const provider = await wallet.getEthersProvider();
-      const signer = provider.getSigner();
-      const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
+  setLoading(true);
+  try {
+    const provider = new BrowserProvider(await wallet.getEthersProvider());
+    const signer = await provider.getSigner();
 
-      const decimals = await usdcContract.decimals();
-      const parsedAmount = ethers.utils.parseUnits(amount, decimals);
+    const usdcContract = new Contract(
+      USDC_ADDRESS,
+      USDC_ABI,
+      signer
+    );
 
-      const tx = await usdcContract.transfer(RECIPIENT_ADDRESS, parsedAmount);
-      await tx.wait();
+    const decimals = await usdcContract.decimals();
+    const parsedAmount = parseUnits(amount, decimals);
 
-      setAmount("");
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error("Error donating:", error);
-      alert("Failed to process donation. Please try again.");
-    } finally {
-      setLoading(false);
+    const balance = await usdcContract.balanceOf(await signer.getAddress());
+    if (balance < parsedAmount) {
+      alert("❌ Insufficient USDC balance");
+      return;
     }
-  };
+
+    const tx = await usdcContract.transfer(RECIPIENT_ADDRESS, parsedAmount);
+    await tx.wait();
+
+    setAmount("");
+    setShowSuccessModal(true);
+  } catch (error) {
+    console.error("Error donating:", error);
+    alert("Failed to process donation. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (!authenticated) {
     return (

@@ -260,7 +260,7 @@ const App = () => {
     .single();
 
   if (error) {
-    console.error("fetchUserStreak error:", error);
+    console.error("fetchUserStreak error:", error)
     return;
   }
 
@@ -460,10 +460,12 @@ setImages(prev => [
       await tx.wait(1);
       */
      setUploadStatus('✅ Smile captured (test mode)');
-     setLoading(false);
 
       
-      setUploadStatus('On-chain ai analysis in progress... 😊');
+      setTimeout(() => {
+        setLoading(false);
+        setUploadStatus('');
+      }, 2000);
     } catch (error) {
       console.error('Error processing photo:', error);
       setUploadStatus(error.message || 'Failed to process photo');
