@@ -531,7 +531,8 @@ const handleSmileBackLocal = async (imageUrl: string) => {
   };
 
   return (
-    <div className="bg-yellow-100 min-h-screen">
+    <div className="min-h-screen smiley-bg">
+
       <div className="container mx-auto px-4 py-8 max-w-[1200px]">
         <div className="mt-4 flex justify-center gap-4">
   <div className="bg-[#FFD700] px-4 py-2 border-2 border-black rounded-lg font-bold shadow">
