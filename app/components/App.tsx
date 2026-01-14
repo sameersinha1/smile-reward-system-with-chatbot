@@ -74,6 +74,21 @@ const App = () => {
   const [uploadStatus, setUploadStatus] = useState<string | React.ReactNode>('');
   const [processedImages] = useState(new Set<string>());
   const [nounsFilterEnabled, setNounsFilterEnabled] = useState(false);
+  const [canGnerateImages, setCanGenerateImages] = useState(false);
+  const fetchUserRewards = async (userId: string) => {
+  const { data, error } = await supabase
+    .from("user_rewards")
+    .select("can_generate_images")
+    .eq("user_id", userId)
+    .single();
+
+  if (error) {
+    console.log("No rewards yet");
+    return;
+  }
+
+  setCanGenerateImages(data.can_generate_images);
+};
 
   useEffect(() => {
     const savedValue = localStorage.getItem('nounsFilterEnabled') === 'true';
@@ -308,6 +323,8 @@ const App = () => {
   useEffect(() => {
   if (authenticated && user) {
     fetchUserStreak(user.id);
+    fetchUserRewards(user.id);
+
   }
 }, [authenticated, user]);
 const updateUserStreak = async (userId: string) => {
@@ -354,10 +371,23 @@ const updateUserStreak = async (userId: string) => {
     .eq("user_id", userId);
 
   await fetchUserStreak(userId);
+  // 🎁 Reward unlock rule
+if (newStreak >= 7) {
+  await supabase
+    .from("user_rewards")
+    .upsert({
+      user_id: userId,
+      can_generate_images: true,
+      reward_level: 1,
+      updated_at: new Date().toISOString(),
+    });
+}
+
 };
 
   const capturePhoto = async () => {
-    
+  setLoading(true);
+
     setLoading(true);
     if (!user) {
   setUploadStatus("Please connect wallet first 🙂");
@@ -535,10 +565,20 @@ const handleSmileBackLocal = async (imageUrl: string) => {
 
       <div className="container mx-auto px-4 py-8 max-w-[1200px]">
         <div className="mt-4 flex justify-center gap-4">
+          {canGnerateImages ? (
+  <div className="bg-green-200 px-4 py-2 border-2 border-black rounded-lg font-bold">
+    🎉 Image Generation Unlocked!
+  </div>
+) : (
+  <div className="bg-gray-200 px-4 py-2 border-2 border-black rounded-lg font-bold">
+    🔒 Image Generation Locked (7-day streak)
+  </div>
+)}
+
   <div className="bg-[#FFD700] px-4 py-2 border-2 border-black rounded-lg font-bold shadow">
     🔥 Current Streak: {currentStreak} days
   </div>
-
+    
   <div className="bg-[#90EE90] px-4 py-2 border-2 border-black rounded-lg font-bold shadow">
     🏆 Best Streak: {maxStreak} days
   </div>
