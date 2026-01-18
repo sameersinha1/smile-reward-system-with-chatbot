@@ -578,7 +578,7 @@ const handleSmileBackLocal = async (imageUrl: string) => {
   <div className="bg-[#FFD700] px-4 py-2 border-2 border-black rounded-lg font-bold shadow">
     🔥 Current Streak: {currentStreak} days
   </div>
-    
+  
   <div className="bg-[#90EE90] px-4 py-2 border-2 border-black rounded-lg font-bold shadow">
     🏆 Best Streak: {maxStreak} days
   </div>
