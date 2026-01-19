@@ -64,7 +64,3 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 ## License
 
 MIT
-
----
-
-Built with ❤️ and 😊 on Base Network, powered by Openputer AI Oracle
